@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Une question pour Yousra 💌</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<style>
+  /* ─── Nuit d'été : aubergine profonde, rose chaud, or abricot ─── */
+  :root{
+    --night:   #170D1C;
+    --night-2: #241228;
+    --card:    #2B1631;
+    --rose:    #FF6B8A;
+    --rose-deep:#E84A6F;
+    --apricot: #FFC26B;
+    --ink:     #FFF3EC;
+    --muted:   #C4A3B8;
+    --line:    #4A2B4E;
+    --serif: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+    --sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  *{ box-sizing:border-box; margin:0; }
+  html,body{ height:100%; }
+  body{
+    font-family: var(--sans);
+    color: var(--ink);
+    background:
+      radial-gradient(1200px 700px at 70% -10%, #3A1C3E 0%, transparent 60%),
+      radial-gradient(900px 600px at 10% 110%, #33163A 0%, transparent 55%),
+      linear-gradient(180deg, var(--night-2), var(--night) 70%);
+    min-height:100vh;
+    overflow-x:hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+  canvas#ambiance{
+    position:fixed; inset:0; width:100%; height:100%;
+    pointer-events:none; z-index:0;
+  }
+  main{
+    position:relative; z-index:1;
+    min-height:100vh;
+    display:flex; align-items:center; justify-content:center;
+    padding: 24px 20px 48px;
+  }
+  .scene{ width:100%; max-width: 560px; }
+
+  /* ─── Étapes ─── */
+  .step{ display:none; position:relative; flex-direction:column; align-items:center; gap:28px; text-align:center; }
+  .step.active{ display:flex; animation: rise .6s cubic-bezier(.2,.8,.25,1) both; }
+  @keyframes rise{
+    from{ opacity:0; transform: translateY(26px) scale(.985); }
+    to  { opacity:1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .step.active{ animation:none; }
+  }
+
+  .eyebrow{
+    font-size:12px; letter-spacing:.22em; text-transform:uppercase;
+    color: var(--apricot); font-weight:600;
+    display:flex; align-items:center; gap:12px;
+  }
+  .eyebrow::before, .eyebrow::after{
+    content:""; width:34px; height:1px;
+    background: linear-gradient(90deg, transparent, var(--apricot));
+    opacity:.7;
+  }
+  .eyebrow::after{ transform: scaleX(-1); }
+
+  h1,h2{
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 500;
+    line-height:1.18;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  h1{ font-size: clamp(30px, 7.5vw, 44px); }
+  h2{ font-size: clamp(26px, 6.5vw, 38px); }
+  .accent{ color: var(--rose); }
+
+  .date-chip{
+    font-size:14px; color: var(--muted);
+    border:1px solid var(--line);
+    background: rgba(43,22,49,.6);
+    padding:8px 18px; border-radius:999px;
+  }
+  .date-chip b{ color: var(--ink); font-weight:600; }
+
+  /* ─── Boutons ─── */
+  .btn{
+    font-family: var(--sans);
+    font-size:17px; font-weight:600;
+    border:none; cursor:pointer;
+    padding: 16px 42px;
+    border-radius: 999px;
+    transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+    touch-action: manipulation;
+  }
+  .btn:focus-visible{ outline: 3px solid var(--apricot); outline-offset: 3px; }
+  .btn-oui{
+    color:#2A0E18;
+    background: linear-gradient(135deg, var(--rose) 0%, var(--rose-deep) 100%);
+    box-shadow: 0 8px 30px rgba(232,74,111,.35), inset 0 1px 0 rgba(255,255,255,.35);
+  }
+  .btn-oui:hover{ transform: translateY(-2px) scale(1.03); box-shadow: 0 12px 38px rgba(232,74,111,.5); }
+  .btn-non{
+    color: var(--muted);
+    background: transparent;
+    border:1.5px solid var(--line);
+    padding: 15px 36px;
+  }
+  .btn-ghost{
+    color: var(--ink);
+    background: rgba(255,243,236,.08);
+    border:1px solid var(--line);
+  }
+  .btn-ghost:hover{ background: rgba(255,243,236,.14); transform: translateY(-1px); }
+
+  .arena{
+    position:relative;
+    display:flex; gap:18px; justify-content:center; align-items:center;
+    min-height: 76px; width:100%;
+  }
+  #btnNon.fleeing{
+    position: absolute; z-index: 50; margin:0;
+    transition: left .22s cubic-bezier(.3,1.4,.5,1), top .22s cubic-bezier(.3,1.4,.5,1),
+                transform .18s ease, opacity .3s ease;
+  }
+  #btnOui{ transition: transform .25s cubic-bezier(.3,1.4,.5,1), box-shadow .2s ease; transform-origin:center; }
+
+  .hint{ font-size:13px; color: var(--muted); opacity:0; transition: opacity .4s ease; }
+  .hint.show{ opacity:.9; }
+
+  /* ─── Célébration ─── */
+  .harem{
+    font-family: var(--serif); font-style: italic;
+    font-size: clamp(40px, 11vw, 72px);
+    line-height:1;
+    background: linear-gradient(120deg, var(--apricot), var(--rose) 65%);
+    -webkit-background-clip: text; background-clip:text;
+    -webkit-text-fill-color: transparent; color: var(--rose);
+  }
+  .harem-sub{
+    font-size: clamp(16px, 4vw, 19px); color: var(--muted); line-height:1.65;
+    max-width: 40ch;
+  }
+  .harem-sub .fix{ color: var(--ink); font-weight:600; }
+  .strike{ text-decoration: line-through; text-decoration-color: var(--rose); opacity:.75; }
+
+  /* ─── Choix activité ─── */
+  .choices{ display:flex; flex-direction:column; gap:14px; width:100%; }
+  .choice{
+    font-family: var(--sans); font-size:16px; font-weight:500;
+    text-align:left; color: var(--ink);
+    background: rgba(43,22,49,.65);
+    border: 1.5px solid var(--line);
+    border-radius: 18px;
+    padding: 18px 22px;
+    cursor:pointer;
+    display:flex; align-items:center; gap:14px;
+    transition: border-color .2s ease, background .2s ease, transform .15s ease;
+  }
+  .choice:hover{ border-color: var(--rose); background: rgba(58,28,62,.8); transform: translateY(-1px); }
+  .choice:focus-visible{ outline: 3px solid var(--apricot); outline-offset: 2px; }
+  .choice.selected{ border-color: var(--rose); background: rgba(232,74,111,.14); }
+  .choice .emo{ font-size:22px; }
+
+  .wish-zone{ display:none; width:100%; flex-direction:column; gap:16px; }
+  .wish-zone.open{ display:flex; animation: rise .45s ease both; }
+  textarea{
+    font-family: var(--sans); font-size:16px; color: var(--ink);
+    background: rgba(23,13,28,.7);
+    border:1.5px solid var(--line); border-radius:16px;
+    padding:16px 18px; width:100%; min-height:96px; resize:vertical;
+  }
+  textarea::placeholder{ color:#8E6F84; }
+  textarea:focus{ outline:none; border-color: var(--rose); box-shadow: 0 0 0 3px rgba(255,107,138,.18); }
+
+  /* ─── Récap ─── */
+  .ticket{
+    width:100%;
+    background: linear-gradient(160deg, rgba(58,28,62,.9), rgba(35,17,40,.95));
+    border:1px solid var(--line);
+    border-radius: 22px;
+    padding: 30px 28px;
+    display:flex; flex-direction:column; gap:14px;
+    text-align:left;
+    box-shadow: 0 20px 60px rgba(0,0,0,.4);
+  }
+  .ticket .row{ display:flex; justify-content:space-between; gap:16px; border-bottom:1px dashed var(--line); padding-bottom:12px; }
+  .ticket .row:last-child{ border-bottom:none; padding-bottom:0; }
+  .ticket .k{ font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); padding-top:3px; white-space:nowrap; }
+  .ticket .v{ font-size:16px; font-weight:600; text-align:right; }
+  .ticket .v.serif{ font-family:var(--serif); font-style:italic; font-weight:500; font-size:18px; color:var(--rose); }
+  .small{ font-size:13px; color: var(--muted); line-height:1.6; max-width:42ch; }
+</style>
+</head>
+<body>
+
+<canvas id="ambiance" aria-hidden="true"></canvas>
+
+<main>
+  <div class="scene">
+
+    <!-- Étape 1 : la question -->
+    <section class="step active" id="step1" aria-label="Question">
+      <div class="eyebrow">Invitation officielle · Yousra</div>
+      <h1>Tu confirmes notre <span class="accent">date</span> mardi prochain&nbsp;?</h1>
+      <div class="date-chip">📅 <b id="dateLabel">mardi prochain</b> · lieu tenu secret 😌</div>
+      <div class="arena" id="arena">
+        <button class="btn btn-oui" id="btnOui">Oui 💘</button>
+        <button class="btn btn-non" id="btnNon">Non</button>
+      </div>
+      <p class="hint" id="hint">Le bouton « Non » semble avoir peur de toi…</p>
+    </section>
+
+    <!-- Étape 2 : célébration -->
+    <section class="step" id="step2" aria-label="Célébration">
+      <div class="harem">YESSS HAREM&nbsp;!</div>
+      <p class="harem-sub">
+        Euh… pardon. <span class="strike">Harem</span>
+        <span class="fix">« Bien. Très bien. Parfait. »</span> 😌<br>
+        C'est exactement ce que je voulais dire. Aucune excitation particulière ici.
+      </p>
+      <button class="btn btn-oui" id="btnSuite">Une dernière question →</button>
+    </section>
+
+    <!-- Étape 3 : l'activité -->
+    <section class="step" id="step3" aria-label="Activité">
+      <div class="eyebrow">Dernière question</div>
+      <h2>Une idée de ce que tu as envie de faire&nbsp;?</h2>
+      <div class="choices">
+        <button class="choice" id="choiceTrust">
+          <span class="emo">✨</span>
+          <span>Je te fais confiance, surprends-moi</span>
+        </button>
+        <button class="choice" id="choiceWish">
+          <span class="emo">💭</span>
+          <span>Je te fais confiance… mais je voudrais qu'il y ait&nbsp;:</span>
+        </button>
+      </div>
+      <div class="wish-zone" id="wishZone">
+        <textarea id="wishText" placeholder="Dis-moi tout… (un resto ? un ciné ? des churros ?)" aria-label="Ce que tu voudrais faire"></textarea>
+        <button class="btn btn-oui" id="btnWishSend">Valider 💌</button>
+      </div>
+    </section>
+
+    <!-- Étape 4 : récap -->
+    <section class="step" id="step4" aria-label="Récapitulatif">
+      <div class="eyebrow">C'est officiel</div>
+      <h2>C'est noté&nbsp;💘</h2>
+      <div class="ticket">
+        <div class="row"><span class="k">Événement</span><span class="v serif">Notre date</span></div>
+        <div class="row"><span class="k">Quand</span><span class="v" id="recapDate">mardi prochain</span></div>
+        <div class="row"><span class="k">Présence</span><span class="v">Confirmée ✔ (le « Non » n'avait aucune chance)</span></div>
+        <div class="row"><span class="k">Programme</span><span class="v" id="recapWish">Surprise totale ✨</span></div>
+      </div>
+      <p class="small" id="sendStatus">Envoi de ta réponse en cours… ✨</p>
+      <button class="btn btn-oui" id="btnSend" style="display:none">Envoyer ma réponse 💌</button>
+      <p class="small" id="sendHint" style="display:none">L'envoi automatique n'a pas fonctionné — ce bouton ouvre ton appli mail avec la réponse déjà écrite, tu n'as plus qu'à appuyer sur envoyer. À mardi 😏</p>
+    </section>
+
+  </div>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ── Date du mardi prochain, en français ── */
+  const now = new Date();
+  let delta = (2 - now.getDay() + 7) % 7;         // 2 = mardi
+  if (delta === 0) delta = 7;
+  const tuesday = new Date(now);
+  tuesday.setDate(now.getDate() + delta);
+  const dateFr = new Intl.DateTimeFormat('fr-FR', { weekday:'long', day:'numeric', month:'long' }).format(tuesday);
+  document.getElementById('dateLabel').textContent = dateFr;
+  document.getElementById('recapDate').textContent = dateFr;
+
+  /* ── Navigation entre étapes ── */
+  const steps = ['step1','step2','step3','step4'].map(id => document.getElementById(id));
+  function go(n){
+    steps.forEach((s,i) => s.classList.toggle('active', i === n));
+    window.scrollTo({ top:0, behavior: reduceMotion ? 'auto' : 'smooth' });
+  }
+
+  /* ── Le bouton Non qui fuit ── */
+  const btnNon = document.getElementById('btnNon');
+  const btnOui = document.getElementById('btnOui');
+  const hint   = document.getElementById('hint');
+  const labels = ['Non', 'Non ?', 'T’es sûre ?', 'Vraiment ?', 'Réfléchis bien…', 'Je me sauve 🏃', 'Aucune chance 😌'];
+  let attempts = 0;
+  let lastFlee = 0;
+
+  function flee(){
+    const nowMs = Date.now();
+    if (nowMs - lastFlee < 300) return;   // anti-rafale : une vraie tentative à la fois
+    lastFlee = nowMs;
+    attempts++;
+    // Zone de fuite : la section de la question elle-même → toujours visible à l'écran
+    const zone = steps[0].getBoundingClientRect();
+    if (!btnNon.classList.contains('fleeing')){
+      const r = btnNon.getBoundingClientRect();
+      btnNon.style.left = (r.left - zone.left) + 'px';
+      btnNon.style.top  = (r.top  - zone.top)  + 'px';
+      btnNon.classList.add('fleeing');
+    }
+    const bw = btnNon.offsetWidth, bh = btnNon.offsetHeight;
+    const maxX = Math.max(1, zone.width  - bw);
+    const maxY = Math.max(1, zone.height - bh);
+    const curR = btnNon.getBoundingClientRect();
+    const curX = curR.left - zone.left, curY = curR.top - zone.top;
+    const ouiR = btnOui.getBoundingClientRect();
+    const ouiX = ouiR.left + ouiR.width/2 - zone.left, ouiY = ouiR.top + ouiR.height/2 - zone.top;
+    let x, y, tries = 0;
+    do {
+      x = Math.random() * maxX;
+      y = Math.random() * maxY;
+      tries++;
+    } while (tries < 20 && (
+      Math.hypot(x - curX, y - curY) < 110 ||                              // assez loin de sa position actuelle
+      Math.hypot(x + bw/2 - ouiX, y + bh/2 - ouiY) < 130                   // sans recouvrir le bouton Oui
+    ));
+    btnNon.style.left = x + 'px';
+    btnNon.style.top  = y + 'px';
+
+    btnNon.textContent = labels[Math.min(attempts, labels.length - 1)];
+    const shrink = Math.max(.65, 1 - attempts * .04);
+    btnNon.style.transform = 'scale(' + shrink + ')';
+    const grow = Math.min(1.6, 1 + attempts * .09);
+    btnOui.style.transform = 'scale(' + grow + ')';
+    if (attempts >= 2) hint.classList.add('show');
+  }
+
+  // Desktop : il fuit dès que le curseur approche
+  document.addEventListener('mousemove', (e) => {
+    if (!steps[0].classList.contains('active')) return;
+    const r = btnNon.getBoundingClientRect();
+    if (r.width === 0) return;
+    const d = Math.hypot(e.clientX - (r.left + r.width/2), e.clientY - (r.top + r.height/2));
+    if (d < 90) flee();
+  });
+  // Mobile / tout appareil : il fuit avant que le tap aboutisse
+  btnNon.addEventListener('touchstart', (e) => { e.preventDefault(); flee(); }, { passive:false });
+  btnNon.addEventListener('pointerdown', (e) => { e.preventDefault(); flee(); });
+  btnNon.addEventListener('click', (e) => { e.preventDefault(); flee(); });
+  window.addEventListener('resize', () => {
+    if (btnNon.classList.contains('fleeing')) flee();
+  });
+
+  /* ── Oui → célébration ── */
+  btnOui.addEventListener('click', () => {
+    btnNon.style.display = 'none';
+    go(1);
+    burst(140);
+  });
+  document.getElementById('btnSuite').addEventListener('click', () => go(2));
+
+  /* ── Étape 3 : choix ── */
+  const choiceTrust = document.getElementById('choiceTrust');
+  const choiceWish  = document.getElementById('choiceWish');
+  const wishZone    = document.getElementById('wishZone');
+  const recapWish   = document.getElementById('recapWish');
+  let wish = 'Surprise totale ✨ (elle me fait confiance)';
+
+  choiceTrust.addEventListener('click', () => {
+    choiceTrust.classList.add('selected');
+    choiceWish.classList.remove('selected');
+    wish = 'Surprise totale ✨ (elle me fait confiance)';
+    recapWish.textContent = 'Surprise totale ✨';
+    setTimeout(() => { go(3); burst(90); sendResult(); }, 350);
+  });
+  choiceWish.addEventListener('click', () => {
+    choiceWish.classList.add('selected');
+    choiceTrust.classList.remove('selected');
+    wishZone.classList.add('open');
+    document.getElementById('wishText').focus();
+  });
+  document.getElementById('btnWishSend').addEventListener('click', () => {
+    const t = document.getElementById('wishText').value.trim();
+    wish = t ? ('Confiance, mais avec : ' + t) : 'Surprise totale ✨ (elle me fait confiance)';
+    recapWish.textContent = t ? t : 'Surprise totale ✨';
+    go(3); burst(90); sendResult();
+  });
+
+  /* ── Envoi automatique du résultat par mail (via FormSubmit) ── */
+  const sendStatus = document.getElementById('sendStatus');
+  const sendHint   = document.getElementById('sendHint');
+  const btnSend    = document.getElementById('btnSend');
+  let sent = false;
+  function sendResult(){
+    if (sent) return;
+    sent = true;
+    fetch('https://formsubmit.co/ajax/blagogiez@gmail.com', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        _subject: 'Réponse de Yousra : c’est OUI pour mardi 💘',
+        _template: 'table',
+        _captcha: 'false',
+        'Date': dateFr,
+        'Présence': 'Confirmée ✔ (le bouton « Non » a esquivé ' + attempts + ' tentative(s))',
+        'Programme': wish
+      })
+    })
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(() => { sendStatus.textContent = 'Réponse envoyée 💌 Il est déjà au courant… à mardi 😏'; })
+    .catch(() => {
+      sent = false;
+      sendStatus.style.display = 'none';
+      btnSend.style.display = '';
+      sendHint.style.display = '';
+    });
+  }
+
+  /* ── Secours : mail pré-rempli si l'envoi auto échoue ── */
+  btnSend.addEventListener('click', () => {
+    const subject = 'C’est OUI pour mardi 💘';
+    const body = 'Coucou !\n\nJe confirme notre date de ' + dateFr + ' — le bouton « Non » n’a jamais eu la moindre chance.\n\nPour le programme : ' + wish + '\n\n— Yousra';
+    location.href = 'mailto:blagogiez@gmail.com?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  });
+
+  /* ── Ambiance : cœurs flottants + confettis ── */
+  const cv = document.getElementById('ambiance');
+  const ctx = cv.getContext('2d');
+  let W, H;
+  function size(){ W = cv.width = innerWidth * devicePixelRatio; H = cv.height = innerHeight * devicePixelRatio; }
+  size(); addEventListener('resize', size);
+
+  function heart(x, y, s, rot, color, alpha){
+    ctx.save();
+    ctx.translate(x, y); ctx.rotate(rot); ctx.scale(s, s);
+    ctx.globalAlpha = alpha; ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(0, 3);
+    ctx.bezierCurveTo(-5, -3, -10, 1, 0, 9);
+    ctx.bezierCurveTo(10, 1, 5, -3, 0, 3);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  const drift = [];
+  if (!reduceMotion){
+    for (let i = 0; i < 22; i++){
+      drift.push({
+        x: Math.random(), y: Math.random(),
+        s: (.5 + Math.random() * 1.4) * devicePixelRatio,
+        v: (.00025 + Math.random() * .0005),
+        ph: Math.random() * Math.PI * 2,
+        c: Math.random() < .5 ? '#FF6B8A' : '#FFC26B',
+        a: .06 + Math.random() * .12
+      });
+    }
+  }
+
+  let confetti = [];
+  function burst(n){
+    if (reduceMotion) return;
+    const cx = W / 2, cy = H * .38;
+    for (let i = 0; i < n; i++){
+      const ang = Math.random() * Math.PI * 2;
+      const sp = (2 + Math.random() * 9) * devicePixelRatio;
+      confetti.push({
+        x: cx, y: cy,
+        vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - 4 * devicePixelRatio,
+        s: (.6 + Math.random() * 1.6) * devicePixelRatio,
+        rot: Math.random() * Math.PI * 2, vr: (Math.random() - .5) * .25,
+        c: ['#FF6B8A', '#FFC26B', '#FFF3EC', '#E84A6F'][i % 4],
+        life: 1
+      });
+    }
+  }
+
+  let t = 0;
+  function frame(){
+    ctx.clearRect(0, 0, W, H);
+    t += .016;
+    for (const p of drift){
+      p.y -= p.v;
+      if (p.y < -.05) { p.y = 1.05; p.x = Math.random(); }
+      const wob = Math.sin(t * .8 + p.ph) * .015;
+      heart((p.x + wob) * W, p.y * H, p.s, Math.sin(t + p.ph) * .3, p.c, p.a);
+    }
+    confetti = confetti.filter(c => c.life > 0);
+    for (const c of confetti){
+      c.x += c.vx; c.y += c.vy;
+      c.vy += .22 * devicePixelRatio;
+      c.vx *= .985;
+      c.rot += c.vr;
+      c.life -= .008;
+      heart(c.x, c.y, c.s, c.rot, c.c, Math.max(0, c.life));
+    }
+    requestAnimationFrame(frame);
+  }
+  if (!reduceMotion) frame();
+})();
+</script>
+
+</body>
+</html>
